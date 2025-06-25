@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .google-btn {
+            background-color: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+        }
+        .google-btn:hover {
+            background-color: #357ae8;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Google OAuth Test Page</h1>
+    
+    <div class="info">
+        <h3>Test Your Google OAuth Integration</h3>
+        <p>Click the button below to test Google OAuth login</p>
+    </div>
+
+    <a href="/api/auth/google" class="google-btn">
+        🔍 Sign in with Google
+    </a>
+
+    <div class="info">
+        <h4>Expected Flow:</h4>
+        <ol style="text-align: left;">
+            <li>Click "Sign in with Google"</li>
+            <li>Redirected to Google login page</li>
+            <li>Login with your Google account</li>
+            <li>Redirected back with JWT token</li>
+            <li>User created/linked in your database</li>
+        </ol>
+    </div>
+
+    <div class="info">
+        <h4>Troubleshooting:</h4>
+        <ul style="text-align: left;">
+            <li>Check your Google Cloud Console credentials</li>
+            <li>Verify redirect URI is configured correctly</li>
+            <li>Make sure .env file has real credentials (not placeholders)</li>
+            <li>Restart server after updating credentials</li>
+        </ul>
+    </div>
+
+    <script>
+        // Handle OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const error = urlParams.get('error');
+        
+        if (token) {
+            document.body.innerHTML += `
+                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3>✅ OAuth Success!</h3>
+                    <p><strong>JWT Token:</strong> ${token}</p>
+                    <p>OAuth login successful! You can now use this token for API requests.</p>
+                </div>
+            `;
+            localStorage.setItem('token', token);
+        } else if (error) {
+            document.body.innerHTML += `
+                <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3>❌ OAuth Error</h3>
+                    <p><strong>Error:</strong> ${error}</p>
+                    <p>Check your Google OAuth configuration.</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
