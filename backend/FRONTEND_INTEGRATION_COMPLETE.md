@@ -705,11 +705,24 @@ Authorization: Bearer <token>
 
 ## 💳 **PAYMENT ENDPOINTS**
 
+⚠️ **IMPORTANT:** All payment endpoints require `role: "buyer"` authentication.
+
+### **Test Credentials:**
+
+```javascript
+// Buyer user (required for payments)
+{
+  "email": "john@example.com",
+  "password": "password123",
+  "role": "buyer"
+}
+```
+
 ### 💰 **Create Payment Order**
 
 ```http
 POST /api/payments/create-order
-Authorization: Bearer <token>
+Authorization: Bearer <buyer-token>
 Content-Type: application/json
 ```
 
@@ -722,17 +735,18 @@ Content-Type: application/json
 }
 ```
 
-**Response (200):**
+**Response (201):**
 
 ```json
 {
   "success": true,
   "data": {
-    "razorpayOrderId": "order_mock987654321",
+    "orderId": "order_mock987654321",
     "amount": 199998,
     "currency": "INR",
-    "key": "rzp_test_demo_key_id"
-  }
+    "receipt": "receipt_mock123"
+  },
+  "message": "Payment order created successfully (Demo Mode)"
 }
 ```
 
@@ -740,7 +754,7 @@ Content-Type: application/json
 
 ```http
 POST /api/payments/verify
-Authorization: Bearer <token>
+Authorization: Bearer <buyer-token>
 Content-Type: application/json
 ```
 
@@ -750,7 +764,8 @@ Content-Type: application/json
 {
   "paymentId": "pay_mock123456789",
   "orderId": "order_mock987654321",
-  "signature": "mock_signature_hash"
+  "signature": "mock_signature_hash",
+  "orderDbId": "60d5ec49f1b2c73d88f8a9b1"
 }
 ```
 
@@ -759,21 +774,29 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Payment verified successfully",
+  "message": "Payment verified and invoice generated successfully",
   "data": {
     "paymentVerified": true,
     "order": {
-      /* updated order with payment status */
+      "_id": "60d5ec49f1b2c73d88f8a9b1",
+      "paymentStatus": "paid",
+      "status": "confirmed"
+    },
+    "invoice": {
+      "_id": "60d5ec49f1b2c73d88f8a9b2",
+      "invoiceNumber": "INV-2025-001",
+      "pdfPath": "invoices/INV-2025-001.pdf",
+      "emailSent": true
     }
   }
 }
 ```
 
-### 🧾 **Generate Invoice**
+### 🎯 **Mock Success Payment (Demo)**
 
 ```http
-POST /api/payments/generate-invoice
-Authorization: Bearer <token>
+POST /api/payments/mock-success
+Authorization: Bearer <buyer-token>
 Content-Type: application/json
 ```
 
@@ -790,50 +813,25 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Invoice generated successfully",
+  "message": "Mock payment processed and invoice generated",
   "data": {
+    "order": {
+      "paymentStatus": "paid",
+      "status": "confirmed"
+    },
     "invoice": {
-      "_id": "60d5ec49f1b2c73d88f8a9b1",
       "invoiceNumber": "INV-2025-001",
-      "orderId": "60d5ec49f1b2c73d88f8a9b2",
-      "amount": 1999.98,
       "pdfPath": "invoices/INV-2025-001.pdf",
-      "emailSent": true,
-      "createdAt": "2025-01-15T10:30:00.000Z"
+      "emailSent": true
     }
   }
 }
 ```
 
-### 📧 **Send Invoice Email**
+### 📄 **Get Invoice Details**
 
 ```http
-POST /api/payments/send-invoice
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "invoiceId": "60d5ec49f1b2c73d88f8a9b1"
-}
-```
-
-### 📥 **Download Invoice**
-
-```http
-GET /api/payments/download-invoice/:invoiceId
-Authorization: Bearer <token>
-```
-
-**Response:** PDF file download
-
-### 📋 **Get Payment History**
-
-```http
-GET /api/payments/history?page=1&limit=10
+GET /api/payments/invoice/:invoiceId
 Authorization: Bearer <token>
 ```
 
@@ -842,21 +840,66 @@ Authorization: Bearer <token>
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "_id": "60d5ec49f1b2c73d88f8a9b1",
-      "paymentId": "pay_mock123456789",
-      "orderId": "60d5ec49f1b2c73d88f8a9b2",
-      "amount": 1999.98,
-      "status": "success",
-      "method": "razorpay",
-      "createdAt": "2025-01-15T10:30:00.000Z"
-    }
-  ],
-  "pagination": {
-    "currentPage": 1,
-    "totalPages": 2,
-    "totalPayments": 15
+  "data": {
+    "_id": "60d5ec49f1b2c73d88f8a9b1",
+    "invoiceNumber": "INV-2025-001",
+    "amount": 1999.98,
+    "pdfPath": "invoices/INV-2025-001.pdf",
+    "emailSent": true,
+    "user": {
+      "_id": "60d5ec49f1b2c73d88f8a9b2",
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "order": {
+      "_id": "60d5ec49f1b2c73d88f8a9b3",
+      "orderNumber": "ORD-2025-001"
+    },
+    "createdAt": "2025-01-15T10:30:00.000Z"
+  }
+}
+```
+
+### 📥 **Download Invoice PDF**
+
+```http
+GET /api/payments/invoice/:invoiceId/download
+Authorization: Bearer <token>
+```
+
+**Response:** Direct PDF file download with proper headers:
+
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="INV-2025-001.pdf"
+```
+
+### 📧 **Test Email Configuration (Admin Only)**
+
+```http
+POST /api/payments/test-email
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "testEmail": "test@example.com"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Email configuration test successful",
+  "data": {
+    "emailSent": true,
+    "gmailConfigured": true,
+    "testEmailSent": "test@example.com"
   }
 }
 ```

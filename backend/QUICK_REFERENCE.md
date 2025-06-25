@@ -23,6 +23,42 @@ const formHeaders = {
 
 ---
 
+## 🔑 **User Roles & Authentication**
+
+### **Available User Roles:**
+
+```javascript
+// Buyer (for payments & orders)
+{
+  email: "john@example.com",
+  password: "password123",
+  role: "buyer"
+}
+
+// Seller (for product management)
+{
+  email: "mike@example.com",
+  password: "password123",
+  role: "seller"
+}
+
+// Admin (full access)
+{
+  email: "admin@example.com",
+  password: "admin123",
+  role: "admin"
+}
+```
+
+### **Role Requirements:**
+
+- **Payment Endpoints:** Require `role: "buyer"`
+- **Product Management:** Require `role: "seller"` or `"admin"`
+- **Admin Functions:** Require `role: "admin"`
+- **General Browsing:** No authentication required
+
+---
+
 ## ⚡ **Quick Endpoints Reference**
 
 ### Authentication
@@ -69,14 +105,24 @@ POST   /api/orders             - Create order
 GET    /api/orders/:id         - Single order
 ```
 
-### Payments (🔒 Auth Required)
+### Payments (🔒 Buyer Role Required)
 
 ```
-POST   /api/payments/create-order    - Create payment order
-POST   /api/payments/verify          - Verify payment
-POST   /api/payments/generate-invoice - Generate invoice
-GET    /api/payments/download-invoice/:id - Download invoice
-GET    /api/payments/history         - Payment history
+POST   /api/payments/create-order         - Create payment order
+POST   /api/payments/verify               - Verify payment (+ auto invoice)
+POST   /api/payments/mock-success         - Mock payment (demo)
+GET    /api/payments/invoice/:id          - Get invoice details
+GET    /api/payments/invoice/:id/download - Download invoice PDF
+POST   /api/payments/test-email           - Test email (admin only)
+```
+
+**⚠️ Important:** Payment endpoints require `role: "buyer"`
+
+```javascript
+// Buyer credentials for testing
+email: "john@example.com";
+password: "password123";
+role: "buyer";
 ```
 
 ### Reviews

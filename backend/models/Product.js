@@ -296,7 +296,7 @@ productSchema.virtual("isOutOfStock").get(function () {
 });
 
 productSchema.virtual("reviewsCount").get(function () {
-  return this.reviews.length;
+  return this.reviews ? this.reviews.length : 0;
 });
 
 // Indexes - Note: slug and sku already have unique:true so no need for manual indexes
