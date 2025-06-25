@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment & Invoice Demo</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .demo-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+        border-left: 5px solid #007bff;
+      }
+
+      .demo-section h3 {
+        color: #007bff;
+        margin-bottom: 15px;
+        font-size: 1.4rem;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+      }
+
+      .feature-card {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+
+      .feature-card:hover {
+        border-color: #007bff;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 123, 255, 0.1);
+      }
+
+      .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+      }
+
+      .api-endpoint {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: "Courier New", monospace;
+        margin: 10px 0;
+        overflow-x: auto;
+      }
+
+      .method {
+        color: #68d391;
+        font-weight: bold;
+      }
+
+      .endpoint {
+        color: #90cdf4;
+      }
+
+      .setup-steps {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+
+      .setup-steps h4 {
+        color: #856404;
+        margin-bottom: 15px;
+      }
+
+      .setup-steps ol {
+        color: #856404;
+        padding-left: 20px;
+      }
+
+      .setup-steps li {
+        margin-bottom: 8px;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin: 5px;
+      }
+
+      .status-demo {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-email {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .test-button {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px 5px;
+      }
+
+      .test-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+      }
+
+      .warning {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>💳 Payment & Invoice System</h1>
+        <p>
+          Complete payment processing with automatic invoice generation and
+          email delivery
+        </p>
+      </div>
+
+      <div class="content">
+        <div class="demo-section">
+          <h3>🎭 Demo Features</h3>
+          <div class="features">
+            <div class="feature-card">
+              <div class="feature-icon">💰</div>
+              <h4>Mock Payments</h4>
+              <p>Razorpay-style payment simulation for showcase</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">📄</div>
+              <h4>PDF Invoices</h4>
+              <p>Professional invoice generation with company branding</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">📧</div>
+              <h4>Email Delivery</h4>
+              <p>Automatic invoice delivery via Gmail SMTP</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🔐</div>
+              <h4>Secure Processing</h4>
+              <p>Authentication-protected payment endpoints</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-section">
+          <h3>🚀 API Endpoints</h3>
+
+          <div class="api-endpoint">
+            <span class="method">POST</span>
+            <span class="endpoint">/api/payments/create-order</span><br />
+            Create a payment order (Mock Razorpay)
+          </div>
+
+          <div class="api-endpoint">
+            <span class="method">POST</span>
+            <span class="endpoint">/api/payments/verify</span><br />
+            Verify payment and generate invoice
+          </div>
+
+          <div class="api-endpoint">
+            <span class="method">POST</span>
+            <span class="endpoint">/api/payments/mock-success</span><br />
+            Simulate successful payment for demo
+          </div>
+
+          <div class="api-endpoint">
+            <span class="method">GET</span>
+            <span class="endpoint">/api/payments/invoice/:id/download</span
+            ><br />
+            Download PDF invoice
+          </div>
+
+          <div class="api-endpoint">
+            <span class="method">POST</span>
+            <span class="endpoint">/api/payments/test-email</span><br />
+            Test Gmail SMTP configuration
+          </div>
+        </div>
+
+        <div class="demo-section">
+          <h3>📊 System Status</h3>
+          <div>
+            <span class="status-badge status-demo"
+              >✅ Mock Payments Active</span
+            >
+            <span class="status-badge status-demo"
+              >✅ PDF Generation Ready</span
+            >
+            <span class="status-badge status-email"
+              >⚠️ Gmail Setup Required</span
+            >
+          </div>
+        </div>
+
+        <div class="setup-steps">
+          <h4>📧 Gmail SMTP Setup (Optional for Email Features)</h4>
+          <ol>
+            <li>Enable 2-Factor Authentication on your Gmail account</li>
+            <li>Go to Google Account → Security → App passwords</li>
+            <li>Generate an App Password for "Mail"</li>
+            <li>
+              Update .env file with your Gmail address and App Password:
+              <div class="api-endpoint" style="margin: 10px 0">
+                GMAIL_USER=your-email@gmail.com<br />
+                GMAIL_APP_PASSWORD=your-16-character-password
+              </div>
+            </li>
+            <li>Restart the server to apply changes</li>
+          </ol>
+        </div>
+
+        <div class="warning">
+          <strong>⚠️ Demo Mode:</strong> All payments are simulated for showcase
+          purposes. The system generates real PDFs and sends real emails (if
+          configured), but no actual money is processed.
+        </div>
+
+        <div style="text-align: center; margin-top: 30px">
+          <a href="/api/health" class="test-button">🔍 Check API Health</a>
+          <a href="/test-oauth" class="test-button">🔐 Test OAuth Login</a>
+        </div>
+
+        <div class="demo-section">
+          <h3>🎯 How to Test</h3>
+          <ol>
+            <li>
+              <strong>Create an Order:</strong> Use the existing order endpoints
+              to create a test order
+            </li>
+            <li>
+              <strong>Process Payment:</strong> Call
+              <code>/api/payments/mock-success</code> with the order ID
+            </li>
+            <li>
+              <strong>View Results:</strong> Order status updated, PDF
+              generated, email sent (if configured)
+            </li>
+            <li>
+              <strong>Download Invoice:</strong> Use the invoice download
+              endpoint to get the PDF
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

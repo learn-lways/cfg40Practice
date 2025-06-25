@@ -377,25 +377,29 @@ router.get("/verify-token", authenticate, (req, res) => {
 // @route   GET /api/auth/google
 // @desc    Initiate Google OAuth
 // @access  Public
-router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
-}));
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
+);
 
 // @route   GET /api/auth/google/callback
 // @desc    Google OAuth callback
 // @access  Public
-router.get('/google/callback', 
-  passport.authenticate('google', { session: false }),
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { session: false }),
   async (req, res) => {
     try {
       const token = generateToken(req.user._id);
-      
+
       // Redirect to frontend with token
-      const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
       res.redirect(`${frontendURL}/auth/success?token=${token}`);
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
-      const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+      console.error("Google OAuth callback error:", error);
+      const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
       res.redirect(`${frontendURL}/auth/error`);
     }
   }

@@ -123,187 +123,201 @@ router.get("/featured", async (req, res) => {
 // @route   GET /api/products/unique
 // @desc    Get unique/one-of-a-kind products
 // @access  Public
-router.get('/unique', async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 12;
-        const skip = (page - 1) * limit;
-        
-        const uniqueProducts = await Product.findUniqueProducts(limit);
-        const totalUnique = await Product.countDocuments({
-            status: "active",
-            $or: [
-                { isUnique: true },
-                { uniquenessScore: { $gte: 70 } },
-                { 
-                    $and: [
-                        { inventory: { $lte: 5 } },
-                        { tags: { $in: ['limited-edition', 'handmade', 'custom', 'vintage', 'rare'] } }
-                    ]
-                }
-            ]
-        });
+router.get("/unique", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
 
-        res.json({
-            success: true,
-            count: uniqueProducts.length,
-            totalCount: totalUnique,
-            currentPage: page,
-            totalPages: Math.ceil(totalUnique / limit),
-            data: uniqueProducts,
-            message: 'Unique products retrieved successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching unique products:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch unique products',
-            error: error.message
-        });
-    }
+    const uniqueProducts = await Product.findUniqueProducts(limit);
+    const totalUnique = await Product.countDocuments({
+      status: "active",
+      $or: [
+        { isUnique: true },
+        { uniquenessScore: { $gte: 70 } },
+        {
+          $and: [
+            { inventory: { $lte: 5 } },
+            {
+              tags: {
+                $in: [
+                  "limited-edition",
+                  "handmade",
+                  "custom",
+                  "vintage",
+                  "rare",
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    res.json({
+      success: true,
+      count: uniqueProducts.length,
+      totalCount: totalUnique,
+      currentPage: page,
+      totalPages: Math.ceil(totalUnique / limit),
+      data: uniqueProducts,
+      message: "Unique products retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching unique products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch unique products",
+      error: error.message,
+    });
+  }
 });
 
 // @route   GET /api/products/recommendations/:userId
 // @desc    Get personalized product recommendations for a user
 // @access  Private
-router.get('/recommendations/:userId', authenticate, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { limit = 10 } = req.query;
+router.get("/recommendations/:userId", authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 10 } = req.query;
 
-        // Check if requesting user is the same as the userId or is admin
-        if (req.user.id !== userId && req.user.role !== 'admin') {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied'
-            });
-        }
-
-        // Get user's order history to understand preferences
-        const Order = require('../models/Order');
-        const userOrders = await Order.find({ buyer: userId })
-            .populate('items.product', 'tags category attributes brand')
-            .limit(50); // Recent orders
-
-        // Extract user preferences from order history
-        const userTags = [];
-        const userCategories = [];
-        const userBrands = [];
-        const userAttributes = {
-            gender: [],
-            ageGroup: [],
-            occasion: [],
-            style: []
-        };
-
-        userOrders.forEach(order => {
-            order.items.forEach(item => {
-                if (item.product) {
-                    userTags.push(...(item.product.tags || []));
-                    userCategories.push(item.product.category);
-                    if (item.product.brand) userBrands.push(item.product.brand);
-                    
-                    const attrs = item.product.attributes || {};
-                    if (attrs.gender) userAttributes.gender.push(attrs.gender);
-                    if (attrs.ageGroup) userAttributes.ageGroup.push(attrs.ageGroup);
-                    if (attrs.occasion) userAttributes.occasion.push(...(attrs.occasion || []));
-                    if (attrs.style) userAttributes.style.push(...(attrs.style || []));
-                }
-            });
-        });
-
-        // Get most frequent preferences
-        const getTopFrequent = (arr, count = 5) => {
-            const frequency = {};
-            arr.forEach(item => frequency[item] = (frequency[item] || 0) + 1);
-            return Object.keys(frequency)
-                .sort((a, b) => frequency[b] - frequency[a])
-                .slice(0, count);
-        };
-
-        const topTags = getTopFrequent(userTags);
-        const topCategories = getTopFrequent(userCategories);
-        const topBrands = getTopFrequent(userBrands);
-        const topGenders = getTopFrequent(userAttributes.gender);
-        const topOccasions = getTopFrequent(userAttributes.occasion);
-
-        // Build recommendation query
-        const recommendationQuery = {
-            status: "active",
-            $or: [
-                { tags: { $in: topTags } },
-                { category: { $in: topCategories } },
-                { brand: { $in: topBrands } },
-                { 'attributes.gender': { $in: topGenders } },
-                { 'attributes.occasion': { $in: topOccasions } }
-            ]
-        };
-
-        // Exclude products user has already ordered
-        const orderedProductIds = userOrders.flatMap(order => 
-            order.items.map(item => item.product?._id).filter(Boolean)
-        );
-        recommendationQuery._id = { $nin: orderedProductIds };
-
-        const recommendations = await Product.find(recommendationQuery)
-            .populate("seller", "name sellerInfo.businessName")
-            .populate("category", "name")
-            .sort({ 
-                averageRating: -1,
-                totalSales: -1,
-                createdAt: -1 
-            })
-            .limit(parseInt(limit));
-
-        res.json({
-            success: true,
-            count: recommendations.length,
-            data: recommendations,
-            preferences: {
-                tags: topTags,
-                categories: topCategories,
-                brands: topBrands,
-                attributes: {
-                    gender: topGenders,
-                    occasions: topOccasions
-                }
-            },
-            message: 'Personalized recommendations retrieved successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch recommendations',
-            error: error.message
-        });
+    // Check if requesting user is the same as the userId or is admin
+    if (req.user.id !== userId && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
+
+    // Get user's order history to understand preferences
+    const Order = require("../models/Order");
+    const userOrders = await Order.find({ buyer: userId })
+      .populate("items.product", "tags category attributes brand")
+      .limit(50); // Recent orders
+
+    // Extract user preferences from order history
+    const userTags = [];
+    const userCategories = [];
+    const userBrands = [];
+    const userAttributes = {
+      gender: [],
+      ageGroup: [],
+      occasion: [],
+      style: [],
+    };
+
+    userOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        if (item.product) {
+          userTags.push(...(item.product.tags || []));
+          userCategories.push(item.product.category);
+          if (item.product.brand) userBrands.push(item.product.brand);
+
+          const attrs = item.product.attributes || {};
+          if (attrs.gender) userAttributes.gender.push(attrs.gender);
+          if (attrs.ageGroup) userAttributes.ageGroup.push(attrs.ageGroup);
+          if (attrs.occasion)
+            userAttributes.occasion.push(...(attrs.occasion || []));
+          if (attrs.style) userAttributes.style.push(...(attrs.style || []));
+        }
+      });
+    });
+
+    // Get most frequent preferences
+    const getTopFrequent = (arr, count = 5) => {
+      const frequency = {};
+      arr.forEach((item) => (frequency[item] = (frequency[item] || 0) + 1));
+      return Object.keys(frequency)
+        .sort((a, b) => frequency[b] - frequency[a])
+        .slice(0, count);
+    };
+
+    const topTags = getTopFrequent(userTags);
+    const topCategories = getTopFrequent(userCategories);
+    const topBrands = getTopFrequent(userBrands);
+    const topGenders = getTopFrequent(userAttributes.gender);
+    const topOccasions = getTopFrequent(userAttributes.occasion);
+
+    // Build recommendation query
+    const recommendationQuery = {
+      status: "active",
+      $or: [
+        { tags: { $in: topTags } },
+        { category: { $in: topCategories } },
+        { brand: { $in: topBrands } },
+        { "attributes.gender": { $in: topGenders } },
+        { "attributes.occasion": { $in: topOccasions } },
+      ],
+    };
+
+    // Exclude products user has already ordered
+    const orderedProductIds = userOrders.flatMap((order) =>
+      order.items.map((item) => item.product?._id).filter(Boolean)
+    );
+    recommendationQuery._id = { $nin: orderedProductIds };
+
+    const recommendations = await Product.find(recommendationQuery)
+      .populate("seller", "name sellerInfo.businessName")
+      .populate("category", "name")
+      .sort({
+        averageRating: -1,
+        totalSales: -1,
+        createdAt: -1,
+      })
+      .limit(parseInt(limit));
+
+    res.json({
+      success: true,
+      count: recommendations.length,
+      data: recommendations,
+      preferences: {
+        tags: topTags,
+        categories: topCategories,
+        brands: topBrands,
+        attributes: {
+          gender: topGenders,
+          occasions: topOccasions,
+        },
+      },
+      message: "Personalized recommendations retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch recommendations",
+      error: error.message,
+    });
+  }
 });
 
 // @route   GET /api/products/:id/similar
 // @desc    Get similar products based on tags and attributes
 // @access  Public
-router.get('/:id/similar', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { limit = 8 } = req.query;
+router.get("/:id/similar", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 8 } = req.query;
 
-        const similarProducts = await Product.findSimilarProducts(id, parseInt(limit));
+    const similarProducts = await Product.findSimilarProducts(
+      id,
+      parseInt(limit)
+    );
 
-        res.json({
-            success: true,
-            count: similarProducts.length,
-            data: similarProducts,
-            message: 'Similar products retrieved successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching similar products:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch similar products',
-            error: error.message
-        });
-    }
+    res.json({
+      success: true,
+      count: similarProducts.length,
+      data: similarProducts,
+      message: "Similar products retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching similar products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch similar products",
+      error: error.message,
+    });
+  }
 });
 
 // =============================================================================

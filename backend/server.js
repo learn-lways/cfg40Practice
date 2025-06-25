@@ -70,10 +70,16 @@ app.use("/api/cart", require("./routes/cart"));
 app.use("/api/sellers", require("./routes/sellers"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/reviews", require("./routes/reviews"));
+app.use("/api/payments", require("./routes/payments"));
 
 // Serve OAuth test page
-app.get('/test-oauth', (req, res) => {
-  res.sendFile(path.join(__dirname, 'test-oauth.html'));
+app.get("/test-oauth", (req, res) => {
+  res.sendFile(path.join(__dirname, "test-oauth.html"));
+});
+
+// Serve Payment & Invoice test page
+app.get("/test-payments", (req, res) => {
+  res.sendFile(path.join(__dirname, "test-payments.html"));
 });
 
 // Upload error handling middleware
