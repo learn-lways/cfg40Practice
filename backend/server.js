@@ -2,7 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const cors = require("cors");
-
+dotenv.config();
 const sellerRoutes = require("./routes/sellerRoutes");
 const buyerRoutes = require("./routes/buyerRoutes");
 const productRoutes = require("./routes/productRoutes");
@@ -10,7 +10,6 @@ const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 
 // Load environment variables
-dotenv.config();
 
 // Initialize app
 const app = express();
@@ -20,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
