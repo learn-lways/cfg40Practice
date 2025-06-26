@@ -9,15 +9,12 @@ const rateLimit = require("express-rate-limit");
 const path = require("path");
 const session = require("express-session");
 const passport = require("./config/passport");
-const { handleUploadError } = require("./middleware/upload");
+const connectDB = require("./config/database");
 
 const app = express();
 
 // Database Connection
-mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/ecommerce")
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+connectDB();
 
 // Security Middleware
 app.use(helmet());
@@ -82,8 +79,17 @@ app.get("/test-payments", (req, res) => {
   res.sendFile(path.join(__dirname, "test-payments.html"));
 });
 
-// Upload error handling middleware
-app.use(handleUploadError);
+// Routes
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/users", require("./routes/users"));
+app.use("/api/products", require("./routes/products"));
+app.use("/api/categories", require("./routes/categories"));
+app.use("/api/cart", require("./routes/cart"));
+app.use("/api/orders", require("./routes/orders"));
+app.use("/api/reviews", require("./routes/reviews"));
+app.use("/api/sellers", require("./routes/sellers"));
+app.use("/api/admin", require("./routes/admin"));
+app.use("/api/payments", require("./routes/payments"));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

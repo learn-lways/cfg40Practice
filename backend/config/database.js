@@ -1,16 +1,27 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  const mongoURI =
+    process.env.MONGODB_URI || "mongodb://localhost:27017/ecommerce";
+  const isAtlas = mongoURI.includes("mongodb+srv");
+
   try {
-    const conn = await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/ecommerce",
-      {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      }
+    console.log(
+      `🔄 Attempting to connect to ${
+        isAtlas ? "MongoDB Atlas" : "Local MongoDB"
+      }...`
     );
 
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    const conn = await mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: isAtlas ? 10000 : 5000, // 10s for Atlas, 5s for local
+      socketTimeoutMS: 45000,
+    });
+
+    console.log(
+      `✅ MongoDB Connected: ${conn.connection.host} (${
+        isAtlas ? "Atlas" : "Local"
+      })`
+    );
 
     // Set up connection event listeners
     mongoose.connection.on("connected", () => {
@@ -31,8 +42,37 @@ const connectDB = async () => {
       console.log("📴 MongoDB connection closed through app termination");
       process.exit(0);
     });
+
+    return conn;
   } catch (error) {
-    console.error("❌ Database connection failed:", error.message);
+    console.error(
+      `❌ ${isAtlas ? "MongoDB Atlas" : "Local MongoDB"} connection failed:`,
+      error.message
+    );
+
+    // If Atlas fails, try local MongoDB as fallback
+    if (isAtlas && process.env.NODE_ENV === "development") {
+      console.log("🔄 Trying local MongoDB as fallback...");
+      try {
+        const fallbackConn = await mongoose.connect(
+          "mongodb://localhost:27017/ecommerce",
+          {
+            serverSelectionTimeoutMS: 5000,
+          }
+        );
+        console.log(
+          `✅ MongoDB Connected (Local Fallback): ${fallbackConn.connection.host}`
+        );
+        return fallbackConn;
+      } catch (fallbackError) {
+        console.error(
+          "❌ Local MongoDB fallback also failed:",
+          fallbackError.message
+        );
+      }
+    }
+
+    console.error("💥 All database connections failed. Exiting...");
     process.exit(1);
   }
 };

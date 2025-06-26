@@ -15,8 +15,26 @@
 // Frontend Environment Configuration
 const API_BASE_URL = "http://localhost:5000/api";
 const OAUTH_URL = "http://localhost:5000/api/auth/google";
-const UPLOAD_URL = "http://localhost:5000/uploads";
+
+// Image URLs (automatically handled by backend)
+// Images are now served via Cloudinary CDN for better performance
+// Local fallback: "http://localhost:5000/uploads"
 ```
+
+### Cloud Services Integration
+
+**Database**: MongoDB Atlas Cloud Database
+
+- **Connection**: Secure cloud-hosted MongoDB cluster
+- **Performance**: Optimized for global access with automatic scaling
+- **Backup**: Built-in automated backups and point-in-time recovery
+
+**Image Storage**: Cloudinary CDN
+
+- **Upload**: Direct upload to Cloudinary with automatic optimization
+- **Delivery**: Global CDN for fast image loading worldwide
+- **Optimization**: Automatic format conversion and compression
+- **Transformations**: On-the-fly image resizing and effects
 
 ### Headers for Authenticated Requests
 
@@ -184,7 +202,7 @@ GET /api/products?page=1&limit=10&category=electronics&sort=price&order=asc&sear
       "tags": ["smartphone", "apple", "premium", "latest"],
       "images": [
         {
-          "url": "iphone-15-pro.jpg",
+          "url": "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/products/iphone-15-pro.jpg",
           "alt": "iPhone 15 Pro",
           "isPrimary": true
         }
@@ -372,7 +390,7 @@ GET /api/categories?includeProducts=true
       "name": "Electronics",
       "slug": "electronics",
       "description": "Electronic devices and gadgets",
-      "image": "electronics.jpg",
+      "image": "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/categories/electronics.jpg",
       "parent": null,
       "level": 0,
       "isActive": true,
@@ -416,7 +434,7 @@ GET /api/categories/:id
     "name": "Electronics",
     "slug": "electronics",
     "description": "Electronic devices and gadgets",
-    "image": "electronics.jpg",
+    "image": "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/categories/electronics.jpg",
     "fullPath": "Electronics",
     "children": [
       /* child categories */
@@ -453,7 +471,12 @@ Authorization: Bearer <token>
           "_id": "60d5ec49f1b2c73d88f8a9b3",
           "name": "iPhone 15 Pro",
           "price": 999.99,
-          "images": [{ "url": "iphone.jpg", "isPrimary": true }]
+          "images": [
+            {
+              "url": "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/products/iphone-15-pro.jpg",
+              "isPrimary": true
+            }
+          ]
         },
         "quantity": 2,
         "price": 999.99,
@@ -944,7 +967,10 @@ formData.append("images", file2);
     "rating": 5,
     "title": "Excellent Product!",
     "comment": "Really satisfied with this purchase...",
-    "images": ["review1.jpg", "review2.jpg"],
+    "images": [
+      "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/reviews/review1.jpg",
+      "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/reviews/review2.jpg"
+    ],
     "isVerifiedPurchase": true,
     "createdAt": "2025-01-15T10:30:00.000Z"
   }
@@ -975,12 +1001,14 @@ GET /api/reviews/product/:productId?page=1&limit=10&sort=newest
       "user": {
         "_id": "60d5ec49f1b2c73d88f8a9b2",
         "name": "John D.",
-        "profilePicture": "profile.jpg"
+        "profilePicture": "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/users/profile.jpg"
       },
       "rating": 5,
       "title": "Excellent Product!",
       "comment": "Really satisfied with this purchase...",
-      "images": ["review1.jpg"],
+      "images": [
+        "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/reviews/review1.jpg"
+      ],
       "isVerifiedPurchase": true,
       "helpful": 12,
       "createdAt": "2025-01-15T10:30:00.000Z"
@@ -1141,7 +1169,12 @@ Authorization: Bearer <token>
       "_id": "60d5ec49f1b2c73d88f8a9b1",
       "name": "iPhone 15 Pro",
       "price": 999.99,
-      "images": [{ "url": "iphone.jpg", "isPrimary": true }],
+      "images": [
+        {
+          "url": "https://res.cloudinary.com/deozpbst5/image/upload/v1234567890/ecommerce/products/iphone-15-pro.jpg",
+          "isPrimary": true
+        }
+      ],
       "isInStock": true,
       "addedAt": "2025-01-15T10:30:00.000Z"
     }
@@ -1444,9 +1477,16 @@ async function handleApiCall(apiFunction) {
 
 ### File Uploads
 
-- Supported formats: JPEG, PNG, GIF
-- Maximum file size: 5MB per file
-- Files stored in `/uploads` directory
+- **Cloud Storage**: Files uploaded to Cloudinary CDN for optimal performance
+- **Local Fallback**: Automatic fallback to local storage if Cloudinary unavailable
+- **Supported formats**: JPEG, PNG, GIF, WebP
+- **Maximum file size**: 5MB per file
+- **Image optimization**: Automatic resizing and compression (max 1200x1200px)
+- **Organized folders**:
+  - Products: `/ecommerce/products/`
+  - Users: `/ecommerce/users/`
+  - Categories: `/ecommerce/categories/`
+  - Reviews: `/ecommerce/reviews/`
 
 ### Rate Limiting
 

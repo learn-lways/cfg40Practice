@@ -1,6 +1,7 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const {
   authenticate,
   authorize,
@@ -39,7 +40,30 @@ router.get("/", optionalAuth, async (req, res) => {
     }
 
     if (category) {
-      query.category = category;
+      const mongoose = require("mongoose");
+      let categoryId = category;
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        // Try to find by slug
+        const catDoc = await Category.findOne({ slug: category });
+        if (catDoc) {
+          categoryId = catDoc._id;
+        } else {
+          // Category not found, return empty result
+          return res.json({
+            success: true,
+            data: {
+              products: [],
+              pagination: {
+                page,
+                limit,
+                total: 0,
+                pages: 0,
+              },
+            },
+          });
+        }
+      }
+      query.category = categoryId;
     }
 
     if (seller) {
@@ -60,9 +84,11 @@ router.get("/", optionalAuth, async (req, res) => {
       query.isFeatured = true;
     }
 
-    // Build sort object
+    // Support both sortBy/sortOrder and sort/order
+    const sortField = req.query.sortBy || req.query.sort || "createdAt";
+    const sortDirection = req.query.sortOrder || req.query.order || "desc";
     const sort = {};
-    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+    sort[sortField] = sortDirection === "desc" ? -1 : 1;
 
     const products = await Product.find(query)
       .populate("seller", "name sellerInfo.businessName sellerInfo.rating")
@@ -86,10 +112,13 @@ router.get("/", optionalAuth, async (req, res) => {
       },
     });
   } catch (error) {
+    // Enhanced error logging for debugging
     console.error("Get products error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
+      error: error.message || String(error),
+      errorObject: JSON.stringify(error, Object.getOwnPropertyNames(error)),
     });
   }
 });
@@ -329,7 +358,17 @@ router.get("/:id/similar", async (req, res) => {
 // @access  Public
 router.get("/:id", optionalAuth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
+    const mongoose = require("mongoose");
+    // Sanitize ID: remove leading non-hex characters (e.g., ':', '/')
+    let rawId = req.params.id;
+    let sanitizedId = rawId.replace(/^[^a-fA-F0-9]+/, "");
+    if (!mongoose.Types.ObjectId.isValid(sanitizedId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID format",
+      });
+    }
+    const product = await Product.findById(sanitizedId)
       .populate(
         "seller",
         "name sellerInfo.businessName sellerInfo.rating sellerInfo.isVerified"

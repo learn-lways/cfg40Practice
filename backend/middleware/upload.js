@@ -1,8 +1,26 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-// Ensure upload directories exist
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Check if Cloudinary is configured
+const isCloudinaryConfigured = () => {
+  return (
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  );
+};
+
+// Ensure upload directories exist (for local fallback)
 const createUploadDirs = () => {
   const dirs = [
     "./uploads/products",
@@ -20,8 +38,37 @@ const createUploadDirs = () => {
 
 createUploadDirs();
 
-// Storage configuration
-const storage = multer.diskStorage({
+// Cloudinary storage configuration
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    let folder = "ecommerce/general";
+
+    // Determine folder based on route
+    if (req.originalUrl.includes("/products")) {
+      folder = "ecommerce/products";
+    } else if (req.originalUrl.includes("/users")) {
+      folder = "ecommerce/users";
+    } else if (req.originalUrl.includes("/categories")) {
+      folder = "ecommerce/categories";
+    } else if (req.originalUrl.includes("/reviews")) {
+      folder = "ecommerce/reviews";
+    }
+
+    return {
+      folder: folder,
+      allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+      transformation: [
+        { width: 1200, height: 1200, crop: "limit", quality: "auto" },
+        { fetch_format: "auto" },
+      ],
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    };
+  },
+});
+
+// Local storage configuration (fallback)
+const localStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadPath = "./uploads/";
 
@@ -46,6 +93,9 @@ const storage = multer.diskStorage({
     cb(null, name);
   },
 });
+
+// Choose storage based on Cloudinary configuration
+const storage = isCloudinaryConfigured() ? cloudinaryStorage : localStorage;
 
 // File filter
 const fileFilter = (req, file, cb) => {
@@ -130,16 +180,55 @@ const handleUploadError = (error, req, res, next) => {
   next(error);
 };
 
-// Utility function to delete files
-const deleteFile = (filePath) => {
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+// Utility function to delete files (works for both local and Cloudinary)
+const deleteFile = async (fileUrl) => {
+  if (!fileUrl) return;
+
+  try {
+    // If it's a Cloudinary URL, extract public_id and delete from Cloudinary
+    if (fileUrl.includes("cloudinary.com")) {
+      const publicId = extractCloudinaryPublicId(fileUrl);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`✅ Deleted Cloudinary image: ${publicId}`);
+      }
+    } else {
+      // For local files
+      const filePath = fileUrl.replace(
+        process.env.BASE_URL || "http://localhost:5000",
+        "."
+      );
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`✅ Deleted local file: ${filePath}`);
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error deleting file:", error);
   }
 };
 
-// Utility function to get file URL
+// Helper function to extract Cloudinary public_id from URL
+const extractCloudinaryPublicId = (url) => {
+  try {
+    const matches = url.match(/\/v\d+\/(.+)\./);
+    return matches ? matches[1] : null;
+  } catch (error) {
+    console.error("Error extracting public_id:", error);
+    return null;
+  }
+};
+
+// Utility function to get file URL (updated for Cloudinary)
 const getFileUrl = (filename, type = "products") => {
   if (!filename) return null;
+
+  // If it's already a full URL (Cloudinary), return as is
+  if (filename.startsWith("http")) {
+    return filename;
+  }
+
+  // For local files, construct local URL
   return `${
     process.env.BASE_URL || "http://localhost:5000"
   }/uploads/${type}/${filename}`;
@@ -150,4 +239,6 @@ module.exports = {
   handleUploadError,
   deleteFile,
   getFileUrl,
+  cloudinary,
+  isCloudinaryConfigured,
 };
