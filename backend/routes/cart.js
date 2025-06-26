@@ -139,6 +139,12 @@ router.post(
   }
 );
 
+// Alias for /api/cart/items to support /api/cart/add
+router.post("/add", (req, res, next) => {
+  req.url = "/items";
+  next();
+});
+
 // @route   PUT /api/cart/items/:productId
 // @desc    Update item quantity in cart
 // @access  Private (Buyer)
